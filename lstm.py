@@ -49,14 +49,14 @@ def make_minibatches(text, batch_size, sequence_length):
 
 #Hyperparameters
 
-epochs = 20000
+epochs = 100
 batch_size = 512
 rnn_size = 512
 num_layers = 3
 keep_prob = 0.7 #dropout rate
 embed_dim = 512
 sequence_length = 30
-alpha = 0.001
+lr = 0.001
 
 save_dir = "./output"
 
@@ -74,7 +74,7 @@ with training.as_default():
     drop_cell = tf.contrib.rnn.DropoutWrapper(lstm, output_keep_prob=keep_prob)
     cell = tf.contrib.rnn.MultiRNNCell([drop_cell] * num_layers)
 
-    initial_state = cell.zero_state(input_text_shape[0], tf.float32)
+    initial_state = cell.zero_state(input_shape[0], tf.float32)
     initial_state = tf.identity(initial_state, name='initial_state')
 
     embed = tf.contrib.layers.embed_sequence(input_text, num_words, embed_dim)
@@ -89,7 +89,7 @@ with training.as_default():
     cost = tf.contrib.seq2seq.sequence_loss(
         logits,
         targets,
-        tf.ones([input_text_shape[0], input_text_shape[1]])
+        tf.ones([input_shape[0], input_shape[1]])
     )
 
     optimizer = tf.train.AdamOptimizer(alpha)
@@ -98,3 +98,26 @@ with training.as_default():
     capped_gradients = [(tf.clip_by_value(grad, -1., 1.), var) for grad, var in gradients if grad is not None]
     train_op = optimizer.apply_gradients(capped_gradients)
 
+
+corpus_int = [dictionary[word] for word in corpus]
+batches = make_minibatches(corpus_int, batch_size, sequence_length)
+
+with tf.Session(graph=training) as sess:
+    sess.run(tf.global_variables_initializer())
+
+    for epoch in range(epochs):
+        state = sess.run(initial_state, {input_text: batches[0][0]})
+        print("Epoch " + str(epoch))
+        for batch_index, (x, y) in enumerate(batches):
+            feed_dict = {
+                input_text: x,
+                targets: y,
+                initial_state: state,
+                alpha: lr
+            }
+            train_loss, state, _ = sess.run([cost, final_state, train_op], feed_dict)
+
+        if epoch % 25 == 0:
+            saver = tf.train.Saver()
+            saver.save(sess, save_dir)
+            print("model saved")
