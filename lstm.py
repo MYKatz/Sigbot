@@ -70,9 +70,12 @@ with training.as_default():
     num_words = len(dictionary)
     input_shape = tf.shape(input_text)
 
-    lstm = tf.contrib.rnn.BasicLSTMCell(num_units=rnn_size)
-    drop_cell = tf.contrib.rnn.DropoutWrapper(lstm, output_keep_prob=keep_prob)
-    cell = tf.contrib.rnn.MultiRNNCell([drop_cell] * num_layers)
+    rnn_layers = []
+    for i in range(num_layers):
+        lstm = tf.contrib.rnn.BasicLSTMCell(num_units=rnn_size)
+        drop_cell = tf.nn.rnn_cell.DropoutWrapper(lstm, output_keep_prob=keep_prob)
+        rnn_layers.append(drop_cell)
+    cell = tf.contrib.rnn.MultiRNNCell(rnn_layers)
 
     initial_state = cell.zero_state(input_shape[0], tf.float32)
     initial_state = tf.identity(initial_state, name='initial_state')
