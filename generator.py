@@ -41,7 +41,7 @@ def pick_word(probabilities, reverse):
     return np.random.choice(list(reverse.values()), 1, p=probabilities.flatten())[0]
 
 gen_length = 1000
-prime_words = "jake"
+prime_words = "intro"
 seq_length = 30
 loaded_graph = tf.Graph()
 
