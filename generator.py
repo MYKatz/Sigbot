@@ -38,10 +38,10 @@ corpus = corpus.split()
 dictionary, reverse = create_tables(corpus)
 
 def pick_word(probabilities, reverse):
-    return np.random.choice(list(reverse.values()), 1, p=probabilities)[0]
+    return np.random.choice(list(reverse.values()), 1, p=probabilities.flatten())[0]
 
-gen_length = 100
-prime_words = "chia"
+gen_length = 1000
+prime_words = "jake"
 seq_length = 30
 loaded_graph = tf.Graph()
 
@@ -60,16 +60,17 @@ with tf.Session(graph=loaded_graph) as sess:
     for n in range(gen_length):
         dyn_input = [[dictionary[word] for word in generated_sentences[-seq_length:]]]
         dyn_seq_length = len(dyn_input[0])
-        
+
         probabilities, prev_state = sess.run(
             [probs, final_state],
             {input_text: dyn_input, initial_state: prev_state})
-        
-        next_word = pick_word(probabilities[dyn_seq_length-1], reverse)
-        print(next_word)
+
+        next_word = pick_word(probabilities[0][dyn_seq_length-1], reverse)
+        if n % 20 == 0:
+            print(n)
         generated_sentences.append(next_word)
 
     episode = ' '.join(generated_sentences)
-    for p, replacement in tokens:
-        episode.replace(" " + replacement, p)
+    for p, replacement in tokens.items():
+        episode = episode.replace(" " + replacement, p)
     print(episode)
